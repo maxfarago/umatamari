@@ -125,11 +125,11 @@ var renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(DPR);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.BasicShadowMap;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 
-var SKY_FOG     = 0xf2ddb0;
+var SKY_FOG     = 0xece4cd;
 var SUN_LIGHT   = new THREE.Vector3(22, 55, -30);
 var SUN_VIEW    = new THREE.Vector3(8, 12, -45).normalize();
 
@@ -139,9 +139,9 @@ scene.fog = new THREE.Fog(SKY_FOG, 60, 230);
 
 var camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 700);
 
-var hemi = new THREE.HemisphereLight(0xcfefff, 0x5f8f43, 0.85);
+var hemi = new THREE.HemisphereLight(0xe5f2ff, 0x879b70, 0.8);
 scene.add(hemi);
-var sun = new THREE.DirectionalLight(0xfff3d0, 0.95);
+var sun = new THREE.DirectionalLight(0xffedcf, 0.9);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.near = 1;
@@ -155,7 +155,7 @@ function groundTexture(){
   var s = 1024, i, x, y, len, rot, dx, dy, ox, oz;
   var c = document.createElement("canvas"); c.width = c.height = s;
   var g = c.getContext("2d");
-  g.fillStyle = "#82cd4c";
+  g.fillStyle = "#91ad78";
   g.fillRect(0,0,s,s);
   g.lineCap = "round";
   function blades(color, alpha, n, w, l0, l1){
@@ -184,9 +184,9 @@ function groundTexture(){
       }
     }
   }
-  blades("#6fbb3c", 0.5, 13000, 1.15, 3, 6);
-  blades("#9edd63", 0.45, 10000, 1.0, 2.5, 5);
-  blades("#5da42f", 0.32, 6000, 1.0, 2, 4.5);
+  blades("#78965f", 0.32, 13000, 1.15, 3, 6);
+  blades("#bed09b", 0.30, 10000, 1.0, 2.5, 5);
+  blades("#6d8c57", 0.18, 6000, 1.0, 2, 4.5);
   g.globalAlpha = 1;
   var t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -195,9 +195,22 @@ function groundTexture(){
   t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   return t;
 }
+// broad color varies in world space, independently of the fine grass tile
+var groundMat = new THREE.MeshLambertMaterial({map:groundTexture()});
+groundMat.onBeforeCompile = function(shader){
+  shader.vertexShader = "varying vec2 pasturePosition;\n" + shader.vertexShader;
+  shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>",
+    "#include <begin_vertex>\npasturePosition = (modelMatrix * vec4(position, 1.0)).xz;");
+  shader.fragmentShader = "varying vec2 pasturePosition;\n" + shader.fragmentShader;
+  shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>",
+    "#include <map_fragment>\n" +
+    "float pasture = sin(dot(pasturePosition, vec2(0.071, 0.043))) * sin(dot(pasturePosition, vec2(-0.037, 0.093)));\n" +
+    "pasture += 0.5 * sin(dot(pasturePosition, vec2(0.129, -0.057)) + 1.7);\n" +
+    "diffuseColor.rgb *= 0.98 + 0.035 * pasture;");
+};
 var ground = new THREE.Mesh(
   new THREE.CircleGeometry(WORLD * 8, 80),
-  new THREE.MeshLambertMaterial({map:groundTexture()})
+  groundMat
 );
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
@@ -207,12 +220,12 @@ function skyTexture(){
   var c = document.createElement("canvas"); c.width = 8; c.height = 256;
   var g = c.getContext("2d");
   var grd = g.createLinearGradient(0, 0, 0, 256);
-  grd.addColorStop(0, "#1a72b0");
-  grd.addColorStop(0.32, "#2f8fc8");
-  grd.addColorStop(0.40, "#4aa9dc");
-  grd.addColorStop(0.45, "#6ec0e8");
-  grd.addColorStop(0.49, "#f2ddb0");
-  grd.addColorStop(1, "#f2ddb0");
+  grd.addColorStop(0, "#77a7c3");
+  grd.addColorStop(0.32, "#91bed3");
+  grd.addColorStop(0.40, "#abd0df");
+  grd.addColorStop(0.45, "#c7e0e6");
+  grd.addColorStop(0.49, "#ece4cd");
+  grd.addColorStop(1, "#ece4cd");
   g.fillStyle = grd;
   g.fillRect(0, 0, 8, 256);
   var t = new THREE.CanvasTexture(c);
@@ -285,15 +298,16 @@ sunGlow.renderOrder = -1;
 skyRoot.add(sunGlow);
 
 var cloudMat = new THREE.MeshBasicMaterial({
-  color: 0xd8e4f0, fog: false, depthTest: false, depthWrite: false
+  color: 0xfff8e9, fog: false, depthTest: false, depthWrite: false
 });
 var cloudShade = new THREE.MeshBasicMaterial({
-  color: 0xc5d3e4, fog: false, depthTest: false, depthWrite: false
+  color: 0xe6e8de, fog: false, depthTest: false, depthWrite: false
 });
 function addCloud(az, el, scale){
   var g = new THREE.Group();
   function slab(w, h, d, x, y, z, mat){
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || cloudMat);
+    var m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), mat || cloudMat);
+    m.scale.set(w * 0.68, h * 0.85, d * 0.65);
     m.position.set(x, y, z);
     m.frustumCulled = false;
     g.add(m);
@@ -315,6 +329,58 @@ addCloud(-0.55, 0.12, 13);
 addCloud(0.7, 0.15, 11);
 addCloud(0.05, 0.18, 8);
 addCloud(-0.95, 0.13, 11);
+
+// nearby toy contact shadows
+var contactCanvas=document.createElement("canvas");
+contactCanvas.width=64; contactCanvas.height=64;
+var contactCtx=contactCanvas.getContext("2d");
+var contactGradient=contactCtx.createRadialGradient(32,32,2,32,32,32);
+contactGradient.addColorStop(0,"rgba(62,65,47,.27)");
+contactGradient.addColorStop(0.45,"rgba(62,65,47,.17)");
+contactGradient.addColorStop(1,"rgba(62,65,47,0)");
+contactCtx.fillStyle=contactGradient; contactCtx.fillRect(0,0,64,64);
+var CONTACT_CAP = 256;
+var contactMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),
+  new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(contactCanvas),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}),CONTACT_CAP);
+contactMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+contactMesh.frustumCulled = false;
+contactMesh.count = 0;
+scene.add(contactMesh);
+var contactDummy = new THREE.Object3D();
+var contactCandidates = [];
+var contactX = Infinity, contactZ = Infinity, contactProps = -1;
+var contactBuilds = 0;
+function updateContacts(){
+  var dx = katamari.position.x - contactX, dz = katamari.position.z - contactZ;
+  if (props.length === contactProps && dx*dx + dz*dz < 1) return;
+  contactX = katamari.position.x; contactZ = katamari.position.z;
+  contactProps = props.length;
+  contactCandidates.length = 0;
+  for (var i=0;i<props.length;i++){
+    var obj = props[i];
+    dx = obj.position.x - contactX; dz = obj.position.z - contactZ;
+    var distance = dx*dx + dz*dz;
+    if (obj.visible && obj.userData.size && distance < 2500){
+      obj.userData.contactDistance = distance;
+      contactCandidates.push(obj);
+    }
+  }
+  contactCandidates.sort(function(a,b){ return a.userData.contactDistance - b.userData.contactDistance; });
+  var n = Math.min(CONTACT_CAP, contactCandidates.length);
+  for (var j=0;j<n;j++){
+    var p = contactCandidates[j], size = p.userData.size;
+    contactDummy.position.set(p.position.x,0.018,p.position.z);
+    contactDummy.rotation.set(-Math.PI/2,0,0);
+    contactDummy.scale.set(size*1.25,size*1.25,1);
+    contactDummy.updateMatrix();
+    contactMesh.setMatrixAt(j,contactDummy.matrix);
+  }
+  contactMesh.count = n;
+  contactMesh.instanceMatrix.updateRange.offset = 0;
+  contactMesh.instanceMatrix.updateRange.count = n * 16;
+  contactMesh.instanceMatrix.needsUpdate = true;
+  contactBuilds++;
+}
 
 // ---------------------------------------------------------------- the ball
 function ballTexture(){
@@ -388,7 +454,7 @@ function dumpBaked(obj){
 }
 
 // ---------------------------------------------------------------- prop kit
-var PAL = [0xff6b6b,0xffa14a,0xffd23f,0x8bd450,0x4fc4ff,0xb58cff,0xff8fc0,
+var PAL = [0xf27668,0xf4a04f,0xf2cd4f,0x98bd69,0x59bce0,0xb18bd6,0xef91b5,
            0xf4efe2,0x9a6b4f,0x5f6b7a,0x2f9e7a,0xe9573f];
 function hue(){ return PAL[(rnd()*PAL.length)|0]; }
 
@@ -398,6 +464,36 @@ function mat(color){
   return matCache[color];
 }
 var geoBox = new THREE.BoxGeometry(1,1,1);
+var toyBoxCache = {};
+// selected toys get a uniform bevel based on their thinnest dimension
+function toyBox(c,w,h,d,x,y,z){
+  var unit = Math.min(w,h,d);
+  var dims = [w/unit,h/unit,d/unit];
+  var key = dims.map(function(v){ return v.toFixed(4); }).join(":");
+  var geo = toyBoxCache[key];
+  if (!geo){
+    geo = new THREE.BoxGeometry(dims[0],dims[1],dims[2],3,3,3);
+    var pos = geo.attributes.position, normal = geo.attributes.normal;
+    var point = new THREE.Vector3(), center = new THREE.Vector3(), delta = new THREE.Vector3();
+    var bevel = 0.12;
+    for (var i=0;i<pos.count;i++){
+      point.fromBufferAttribute(pos,i);
+      for (var axis=0;axis<3;axis++){
+        var half = dims[axis]*0.5;
+        var value = point.getComponent(axis);
+        if (Math.abs(value) < half*0.9) value = Math.sign(value)*(half-bevel);
+        point.setComponent(axis,value);
+        center.setComponent(axis,Math.max(-half+bevel,Math.min(half-bevel,value)));
+      }
+      delta.copy(point).sub(center).normalize();
+      point.copy(center).addScaledVector(delta,bevel);
+      pos.setXYZ(i,point.x,point.y,point.z);
+      normal.setXYZ(i,delta.x,delta.y,delta.z);
+    }
+    toyBoxCache[key] = geo;
+  }
+  return part(geo,c,unit,unit,unit,x,y,z);
+}
 var geoCyl = new THREE.CylinderGeometry(0.5,0.5,1,14);
 var geoSph = new THREE.SphereGeometry(0.5,12,9);
 var geoCon = new THREE.ConeGeometry(0.5,1,14);
@@ -427,27 +523,81 @@ var BRASS = 0xd2a63c, BRONZE = 0x6f7f63, STEEL = 0x9aa3ad;
 // group. Anything parented to the ball spends half of each revolution underground.
 function buildHead(){
   var g = new THREE.Group();
-  turn(g, box(HIDE, 0.30,0.66,0.30,  0, 0.26, 0.00), -0.34,0,0);
-  g.add(box(HIDE, 0.32,0.34,0.46,    0, 0.62, 0.20));
-  g.add(box(HIDE, 0.26,0.25,0.30,    0, 0.51, 0.47));
-  g.add(box(SOCK, 0.10,0.34,0.03,    0, 0.60, 0.62));
+  turn(g, toyBox(HIDE, 0.30,0.66,0.30,  0, 0.26, 0.00), -0.34,0,0);
+  g.add(part(geoSph,HIDE,0.39,0.40,0.52,0,0.62,0.20));
+  g.add(part(geoSph,0xcc996b,0.35,0.29,0.38,0,0.51,0.47));
+  g.add(toyBox(SOCK, 0.10,0.34,0.03,    0, 0.60, 0.62));
   g.add(sph(DARK, 0.035, -0.07, 0.44, 0.61));
   g.add(sph(DARK, 0.035,  0.07, 0.44, 0.61));
   g.add(sph(DARK, 0.052, -0.165, 0.68, 0.33));
   g.add(sph(DARK, 0.052,  0.165, 0.68, 0.33));
   g.add(con(HIDE, 0.062, 0.19, -0.125, 0.86, 0.04));
   g.add(con(HIDE, 0.062, 0.19,  0.125, 0.86, 0.04));
-  g.add(box(MANE, 0.13,0.32,0.30,    0, 0.66, -0.04));
-  g.add(box(MANE, 0.15,0.24,0.16,    0, 0.38, -0.16));
+  g.add(toyBox(MANE, 0.13,0.32,0.30,    0, 0.66, -0.04));
+  g.add(toyBox(MANE, 0.15,0.24,0.16,    0, 0.38, -0.16));
+  g.add(sph(SOCK,0.015,-0.194,0.697,0.348));
+  g.add(sph(SOCK,0.015,0.194,0.697,0.348));
+  g.traverse(function(o){ if(o.isMesh) o.castShadow=true; });
   return g;
+}
+// sculpted locks: tapered rings following a curved centerline
+function tailLock(side, length, color){
+  var curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0,0,0),
+    new THREE.Vector3(side*0.25,0.015,-0.15),
+    new THREE.Vector3(side*0.70,-0.09,-0.34),
+    new THREE.Vector3(side,-0.28,-0.50),
+    new THREE.Vector3(side*0.85,-0.49,-0.59)
+  ]);
+  var rings = 10, sides = 8;
+  var frames = curve.computeFrenetFrames(rings,false);
+  var positions = [], indices = [];
+  var widths = [0.065,0.105,0.100,0.060,0.008];
+  for (var i=0;i<=rings;i++){
+    var t = i/rings, point = curve.getPointAt(t);
+    var section = Math.min(3,Math.floor(t*4));
+    var blend = t*4-section;
+    blend = blend*blend*(3-2*blend);
+    var width = widths[section]*(1-blend)+widths[section+1]*blend;
+    for (var j=0;j<sides;j++){
+      var angle = j/sides*Math.PI*2;
+      var vertex = point.clone().addScaledVector(frames.normals[i],Math.cos(angle)*width)
+        .addScaledVector(frames.binormals[i],Math.sin(angle)*width*0.8);
+      positions.push(vertex.x,vertex.y*length,vertex.z*length);
+      if (i<rings){
+        var a = i*sides+j, b = i*sides+(j+1)%sides;
+        indices.push(a,b,a+sides,b,b+sides,a+sides);
+      }
+    }
+  }
+  // cap both ends so the tuft stays solid from every angle
+  var start = positions.length/3;
+  positions.push(0,0,0);
+  var end = curve.getPointAt(1);
+  positions.push(end.x,end.y*length,end.z*length);
+  for (var k=0;k<sides;k++){
+    var next = (k+1)%sides;
+    indices.push(start,next,k);
+    indices.push(start+1,rings*sides+k,rings*sides+next);
+  }
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  var lock = new THREE.Mesh(geo,mat(color));
+  lock.castShadow = true;
+  return lock;
 }
 function buildTail(){
   var g = new THREE.Group();
-  g.add(box(MANE, 0.16,0.16,0.18, 0, 0.06, 0.04));
+  var dock = part(geoSph,MANE,0.15,0.17,0.25,0,0.025,0.035);
+  dock.castShadow = true;
+  g.add(dock);
   var hair = new THREE.Group();
-  hair.position.set(0, 0.02, -0.04);
-  turn(hair, con(MANE, 0.16, 0.46, 0, -0.02, -0.16), 1.95, 0, 0);
-  turn(hair, con(MANE, 0.10, 0.42, 0, -0.12, -0.50), 2.18, 0, 0);
+  hair.position.set(0,0.02,-0.04);
+  hair.add(tailLock(-0.080,0.88,0x49301f));
+  hair.add(tailLock(0.080,0.94,0x543722));
+  hair.add(tailLock(0,1.08,MANE));
   g.add(hair);
   g.userData.hair = hair;
   return g;
@@ -501,7 +651,7 @@ function updateRig(dt){
   if (tailSpring < -0.95) tailSpring = -0.95;
 
   tailGrp.scale.setScalar(hs*0.95);
-  tailGrp.position.set(0, radius*0.55, -radius*1.14);
+  tailGrp.position.set(0, radius*0.55, -radius*0.82);
   tailGrp.rotation.set(tailPitch, tailSpring, wantRoll);
 
   var hair = tailGrp.userData.hair;
@@ -514,6 +664,13 @@ function updateRig(dt){
     hairLag = wantHair;
   }
   hair.rotation.set(0.12*(1 - stream), hairLag, swish*0.08);
+  for (var lockIndex=0;lockIndex<hair.children.length;lockIndex++){
+    var lock = hair.children[lockIndex];
+    var lag = lockIndex*0.7;
+    lock.rotation.x = -gulpPunch*(1.1+lockIndex*0.3);
+    lock.rotation.y = Math.sin(bobT*2.2-lag)*(0.018+gait*0.025) + hairLag*0.08*lockIndex;
+    lock.rotation.z = Math.sin(bobT*2.2-lag)*0.012;
+  }
 }
 
 // ---------------------------------------------------------------- a horse, generally
@@ -526,8 +683,8 @@ function quadruped(s, hide, mane, legK){
   g.add(box(hide, s*0.60, s*0.30, s*0.26,  0,        y,         0));       // barrel
   g.add(box(hide, s*0.22, s*0.31, s*0.27, -s*0.26,   y+s*0.03,  0));       // rump
   turn(g, box(hide, s*0.13, s*0.36, s*0.20, s*0.29,  y+s*0.17,  0), 0,0,-0.42); // neck
-  g.add(box(hide, s*0.21, s*0.13, s*0.14,  s*0.43,   y+s*0.31,  0));       // head
-  g.add(box(hide, s*0.10, s*0.10, s*0.11,  s*0.51,   y+s*0.27,  0));       // muzzle
+  g.add(toyBox(hide, s*0.21, s*0.13, s*0.14,  s*0.43,   y+s*0.31,  0));       // head
+  g.add(toyBox(hide, s*0.10, s*0.10, s*0.11,  s*0.51,   y+s*0.27,  0));       // muzzle
   g.add(sph(DARK, s*0.018, s*0.50, y+s*0.34, -s*0.055));
   g.add(sph(DARK, s*0.018, s*0.50, y+s*0.34,  s*0.055));
   g.add(con(hide, s*0.026, s*0.08, s*0.36, y+s*0.41, -s*0.04));
@@ -653,7 +810,7 @@ var KIT = [
     return g;}},
   {name:"horsehair brush", size:[0.36,0.5], w:6, zone:[0,42], make:function(s){
     var g=new THREE.Group();
-    g.add(box(0x9a6b4f, s*0.9, s*0.16, s*0.30, 0, s*0.32, 0));
+    g.add(toyBox(0x9a6b4f, s*0.9, s*0.16, s*0.30, 0, s*0.32, 0));
     g.add(box(BRASS, s*0.88, s*0.06, s*0.34, 0, s*0.21, 0));
     g.add(box(0x3a2a1a, s*0.84, s*0.18, s*0.32, 0, s*0.09, 0));
     g.add(box(0x2a1c12, s*0.12, s*0.16, s*0.34, -s*0.18, s*0.09, 0));
@@ -702,7 +859,7 @@ var KIT = [
     return g;}},
   {name:"book", size:[0.5,0.8], w:5, zone:[0,48], make:function(s,c){
     var g=new THREE.Group();
-    g.add(box(c, s, s*0.22, s*0.75, 0, s*0.11, 0));
+    g.add(toyBox(c, s, s*0.22, s*0.75, 0, s*0.11, 0));
     g.add(box(0xf7f2e4, s*0.88, s*0.16, s*0.68, s*0.05, s*0.11, 0));
     g.add(box(c, s*0.10, s*0.24, s*0.76, -s*0.46, s*0.12, 0));
     g.add(box(BRASS, s*0.46, s*0.03, s*0.08, s*0.06, s*0.23, 0));
@@ -906,8 +1063,8 @@ var KIT = [
   // ---- street-sized
   {name:"car", size:[3.5,5.0], w:7, hp:120, zone:[16,130], make:function(s,c){
     var g=new THREE.Group();
-    g.add(box(c, s, s*0.22, s*0.42, 0, s*0.22, 0));
-    g.add(box(c, s*0.5, s*0.2, s*0.38, -s*0.04, s*0.42, 0));
+    g.add(toyBox(c, s, s*0.22, s*0.42, 0, s*0.22, 0));
+    g.add(toyBox(c, s*0.5, s*0.2, s*0.38, -s*0.04, s*0.42, 0));
     g.add(box(0x7ec8e8, s*0.36, s*0.14, s*0.40, -s*0.04, s*0.44, 0));
     g.add(box(STEEL, s*0.08, s*0.06, s*0.10, s*0.48, s*0.24,  s*0.16));
     g.add(box(STEEL, s*0.08, s*0.06, s*0.10, s*0.48, s*0.24, -s*0.16));
@@ -1145,6 +1302,7 @@ function placeProp(g, size, name, hp, extra){
   g.matrixAutoUpdate = false;
   scene.add(g);
   props.push(g);
+  contactProps = -1;
   return g;
 }
 
@@ -1232,6 +1390,7 @@ function freezeDebrisEntry(d){
   m.updateMatrix();
   m.matrixAutoUpdate = false;
   props.push(m);
+  contactProps = -1;
 }
 
 function spawnDebris(mesh, velImp){
@@ -1743,6 +1902,7 @@ function applyFov(){
 
 function reset(){
   var i;
+  contactProps = -1;
   for (i=0;i<props.length;i++){
     dumpBaked(props[i]);
     scene.remove(props[i]);
@@ -2244,6 +2404,7 @@ function step(dt){
     if (p.userData.trojan && !p.userData.opened) crackTrojan(p);
     if (p.userData.size <= radius * PICKUP){
       props.splice(i,1);
+      contactProps = -1;
       collect(p);
     } else {
       var d = Math.sqrt(d2) || 0.001;
@@ -2321,6 +2482,7 @@ function frame(){
   updateRig(dt);
   placeCamera(dt, false);
   placeSky();
+  updateContacts();
   renderer.render(scene, camera);
   katamari.scale.setScalar(1);
   popInterp();
@@ -2340,6 +2502,8 @@ window.__mh = function(){
     meshes: meshes,
     shadow: shadow,
     dpr: renderer.getPixelRatio(),
+    contacts: contactMesh.count,
+    contactBuilds: contactBuilds,
     props: props.length,
     mode: gameMode,
     elapsed: +elapsed.toFixed(2),
