@@ -360,7 +360,7 @@ function updateContacts(){
     var obj = props[i];
     dx = obj.position.x - contactX; dz = obj.position.z - contactZ;
     var distance = dx*dx + dz*dz;
-    if (obj.visible && obj.userData.size && distance < 2500){
+    if (obj.visible && obj.userData.size && obj.userData.size <= 3 && distance < 2500){
       obj.userData.contactDistance = distance;
       contactCandidates.push(obj);
     }
@@ -1172,7 +1172,7 @@ var KIT = [
     return g;}},
   {name:"house", size:[9,15], w:6, zone:[30,130], make:function(s,c){
     var g=new THREE.Group();
-    g.add(box(c, s*0.8, s*0.55, s*0.7, 0, s*0.27, 0));
+    g.add(box(c, s*0.8, s*0.55, s*0.7, 0, s*0.28, 0));
     turn(g, con(0xc0503f, s*0.62, s*0.4, 0, s*0.74, 0), 0, Math.PI/4, 0);
     g.add(box(0x6b4a2f, s*0.14, s*0.26, s*0.03, 0, s*0.13, s*0.36));
     g.add(box(0x5c3d24, s*0.20, s*0.04, s*0.08, 0, s*0.02, s*0.38));
@@ -1201,8 +1201,8 @@ var KIT = [
     var g=new THREE.Group();
     g.add(box(c, s*0.55, s, s*0.55, 0, s*0.5, 0));
     for (var i=0;i<5;i++)
-      g.add(box(0x9fdcf5, s*0.5, s*0.07, s*0.56, 0, s*0.16+i*s*0.17, 0));
-    g.add(box(DARK, s*0.55, s*0.10, s*0.56, 0, s*0.05, 0));
+      g.add(box(0x9fdcf5, s*0.5, s*0.07, s*0.58, 0, s*0.16+i*s*0.17, 0));
+    g.add(box(DARK, s*0.59, s*0.10, s*0.59, 0, s*0.055, 0));
     g.add(box(0x6b4a2f, s*0.12, s*0.16, s*0.04, 0, s*0.10, s*0.28));
     g.add(cyl(STEEL, s*0.02, s*0.16, s*0.12, s*1.06, 0));
     return g;}}
