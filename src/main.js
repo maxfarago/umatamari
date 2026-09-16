@@ -4,7 +4,7 @@ import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtil
 
 
 // ---------------------------------------------------------------- constants
-var GOAL_R      = 4.0;      // 8 m across = 78.2hh
+var GOAL_R      = 4.0;      // 8 m across = 78.2 hands
 var START_R     = 0.30;
 var ROUND_TIME  = 180;
 var WORLD       = 130;
@@ -1243,7 +1243,7 @@ function pickRecipeForBand(lo, hi){
 }
 
 // ---------------------------------------------------------------- hands
-// A hand is four inches. 14.2hh means fourteen hands and two inches, which is
+// A hand is four inches. 14.2 hands means fourteen hands and two inches, which is
 // 14.5 hands decimal. The notation is wrong and everybody uses it anyway.
 function handsOf(r){ return r*200/CM_PER_HAND; }
 function handsText(h){
@@ -1251,20 +1251,15 @@ function handsText(h){
   var inch  = Math.floor((h - whole) * 4);
   return inch ? whole + "." + inch : "" + whole;
 }
-function metricText(r){
-  var cm = r*200;
-  return cm < 100 ? Math.round(cm) + "cm" : (cm/100).toFixed(2) + "m";
-}
-
-// thresholds in decimal hands; 14.5 decimal is the famous 14.2hh
+// thresholds in decimal hands; 14.5 decimal is the famous 14.2 hands
 var TIERS = [
   [ 8.5,   "miniature",     ""],
   [10.0,   "shetland",      ""],
   [12.5,   "large pony",    ""],
-  [14.5,   "a horse",       "14.2hh. Up to here you were a pony. Officially."],
+  [14.5,   "a horse",       "14.2 hands. Up to here you were a pony. Officially."],
   [16.0,   "hunter",        ""],
   [17.5,   "shire",         ""],
-  [21.5,   "record",        "21.2hh. Sampson stood this tall in 1850. No horse has beaten it."],
+  [21.5,   "record",        "21.2 hands. Sampson stood this tall in 1850. No horse has beaten it."],
   [30.0,   "hazard",        ""],
   [45.0,   "landmark",      ""],
   [60.0,   "weather",       ""],
@@ -1901,6 +1896,7 @@ function applyFov(){
 }
 
 function reset(){
+  progressRange = GOAL_R;
   var i;
   contactProps = -1;
   for (i=0;i<props.length;i++){
@@ -2088,7 +2084,7 @@ function checkTier(){
     tier = t;
     if (!cleared){
       var row = TIERS[t];
-      banner(row[2] || (handsText(row[0]) + "hh — " + row[1]), row[2] ? 3600 : 2200);
+      banner(row[2] || (handsText(row[0]) + " hands — " + row[1]), row[2] ? 3600 : 2200);
     }
   } else {
     tier = t;
@@ -2122,42 +2118,105 @@ var sizeval = document.getElementById("sizeval");
 var metricEl= document.getElementById("metric");
 var barfill = document.getElementById("barfill");
 var barEl   = document.getElementById("bar");
-var tierEl  = document.getElementById("tier");
-var hpEl    = document.getElementById("hp");
 var timeEl  = document.getElementById("time");
 var clockEl = document.getElementById("clock");
 var clockCap = clockEl.querySelector(".cap");
 
-function progOf(r){
-  return (Math.log(r/START_R) / Math.log(GOAL_R/START_R)) * 100;
-}
+var progressEl = document.getElementById("progress");
+var recordLabel = document.getElementById("record-label");
+var recordSize = document.getElementById("record-size");
+var currentMarker = document.getElementById("bar-current");
+var nextMarker = document.getElementById("bar-next");
+var recordMarker = document.getElementById("bar-record");
+var nextName = document.getElementById("next-name");
+var nextSize = document.getElementById("next-size");
+var nextMeter = document.getElementById("next-meter");
+var nextFill = document.getElementById("next-fill");
+var progressRecord = 0, progressRecordState = "loading", progressRange = GOAL_R;
+var progressTickRange = 0;
+var progressTicks = [];
 (function buildTicks(){
+  var ticks = document.getElementById("bar-ticks");
   for (var i=0;i<TIERS.length;i++){
-    var r = TIERS[i][0] * CM_PER_HAND / 200;
-    var p = progOf(r);
-    if (p <= 2 || p >= 99) continue;
-    var d = document.createElement("div");
-    d.className = "tick" + (TIERS[i][2] ? " big" : "");
-    d.style.left = p + "%";
-    barEl.appendChild(d);
+    var tick = document.createElement("i");
+    tick.className = "tick";
+    ticks.appendChild(tick);
+    progressTicks.push(tick);
   }
 })();
 
-var lastHp = 1, hpT = null;
-function syncHUD(){
+function growthProgress(r, record, previousRange){
+  var h = handsOf(r), index = tierIndex(h);
+  var next = TIERS[index+1] || null;
+  var floor = index < 0 ? START_R : TIERS[index][0]*CM_PER_HAND/200;
+  var target = next ? next[0]*CM_PER_HAND/200 : r;
+  var range = Math.max(GOAL_R,record,target,previousRange || GOAL_R);
+  while (r > range) range *= 2;
+  function position(value){
+    return Math.max(0,Math.min(100,Math.log(Math.max(START_R,value)/START_R)/Math.log(range/START_R)*100));
+  }
+  return {next:next,target:target,range:range,current:position(r),record:position(record),
+    milestone:position(target),step:next ? Math.max(0,Math.min(1,(r-floor)/(target-floor))) : 1};
+}
+function syncProgress(){
+  if (!Number.isFinite(radius) || radius <= 0) return;
+  var showRecord = gameMode !== "endless";
+  var record = showRecord ? progressRecord : 0;
+  var state = growthProgress(radius,record,progressRange);
+  progressRange = state.range;
   var h = handsOf(radius);
-  sizeval.innerHTML = handsText(h) + "<span>hh</span>";
-  metricEl.textContent = metricText(radius);
-  barfill.style.width = Math.max(0, Math.min(100, progOf(radius))) + "%";
-  tierEl.textContent = tierName(tier);
-  hpEl.textContent = Math.round(hp) + " hp";
-  if (hp !== lastHp){
-    lastHp = hp;
-    hpEl.classList.add("up");
-    clearTimeout(hpT);
-    hpT = setTimeout(function(){ hpEl.classList.remove("up"); }, 700);
+  var currentText = handsText(h) + " hands";
+  var scoreText = record ? handsText(handsOf(record)) + " hands" : "";
+  var passed = showRecord && record > 0 && radius > record;
+  var remain = state.next ? Math.max(0, state.next[0] - h) : 0;
+  var remainText = handsText(remain) + " hands";
+  recordLabel.textContent = passed ? "High score passed" : "High score";
+  recordSize.textContent = scoreText || (progressRecordState === "loading" ? "Loading…" : progressRecordState === "unavailable" ? "Unavailable" : "No score yet");
+  progressEl.classList.toggle("record-passed",passed);
+  progressEl.classList.toggle("no-record",!showRecord);
+  barfill.style.width = state.current + "%";
+  currentMarker.style.left = state.current + "%";
+  recordMarker.style.left = state.record + "%";
+  recordMarker.classList.toggle("hidden",!showRecord || !record);
+  nextMarker.classList.toggle("hidden",!state.next);
+  nextMarker.style.left = state.milestone + "%";
+  nextName.textContent = state.next ? "Next: " + state.next[1] : "All size milestones reached";
+  nextSize.textContent = state.next ? remainText : "";
+  nextFill.style.width = state.step*100 + "%";
+  nextMeter.classList.toggle("hidden",!state.next);
+  nextMeter.setAttribute("aria-valuemin","0");
+  nextMeter.setAttribute("aria-valuemax","100");
+  nextMeter.setAttribute("aria-valuenow",String(Math.round(state.step*100)));
+  nextMeter.setAttribute("aria-valuetext",state.next ? Math.round(state.step*100) + "% to " + state.next[1] + ", " + remainText + " remaining" : "All size milestones reached");
+  barEl.setAttribute("aria-valuemin",String(handsOf(START_R)));
+  barEl.setAttribute("aria-valuemax",String(handsOf(state.range)));
+  barEl.setAttribute("aria-valuenow",String(h));
+  barEl.setAttribute("aria-valuetext","Max: " + currentText + (showRecord ? (scoreText ? "; high score: " + scoreText + (passed ? ", passed" : "") : "; high score " + progressRecordState) : "") + (state.next ? "; next: " + state.next[1] + " in " + remainText : "; all milestones reached"));
+  if (progressTickRange !== state.range){
+    progressTickRange = state.range;
+    for (var i=0;i<progressTicks.length;i++){
+      var value = TIERS[i][0]*CM_PER_HAND/200;
+      var pos = Math.log(value/START_R)/Math.log(state.range/START_R)*100;
+      progressTicks[i].style.left = pos + "%";
+      progressTicks[i].classList.toggle("hidden",pos <= 1 || pos >= 99);
+    }
   }
 }
+
+function fitSizeName(){
+  sizeval.style.transform = "none";
+  var w = sizeval.clientWidth;
+  var s = sizeval.scrollWidth;
+  sizeval.style.transform = s > w && w > 0 ? "scale(" + (w / s) + ")" : "";
+}
+function syncHUD(){
+  var h = handsOf(radius);
+  metricEl.textContent = handsText(h) + " hands";
+  sizeval.textContent = tierName(tier);
+  fitSizeName();
+  syncProgress();
+}
+addEventListener("resize", fitSizeName);
 function syncClock(){
   if (running && gameMode === "endless"){
     clockCap.textContent = "Time";
@@ -2220,11 +2279,10 @@ var stickId = null, stickOrigin = {x:0,y:0};
 
 function stickStart(e){
   var t = e.changedTouches[0];
+  var r = knob.getBoundingClientRect();
   stickId = t.identifier;
-  stickOrigin.x = t.clientX; stickOrigin.y = t.clientY;
-  knob.style.display = "block";
-  knob.style.left = (t.clientX-55) + "px";
-  knob.style.top  = (t.clientY-55) + "px";
+  stickOrigin.x = r.left + r.width * 0.5;
+  stickOrigin.y = r.top + r.height * 0.5;
   e.preventDefault();
 }
 function stickMove(e){
@@ -2244,7 +2302,6 @@ function stickEnd(e){
   for (var i=0;i<e.changedTouches.length;i++){
     if (e.changedTouches[i].identifier === stickId){
       stickId = null; touchDir.set(0,0);
-      knob.style.display = "none";
       knob.firstElementChild.style.transform = "";
     }
   }
@@ -2535,7 +2592,7 @@ window.__mh = function(){
 function clearGoal(){
   cleared = true;
   ownerCall(99);
-  banner("78.2hh. Max is max. Keep going.", 3200);
+  banner("78.2 hands. Max is max. Keep going.", 3200);
 }
 
 var startveil = document.getElementById("startveil");
@@ -2547,14 +2604,14 @@ function finish(won){
   var h = handsOf(radius);
   var endless = gameMode === "endless";
   document.getElementById("endtitle").textContent = won ? "umatamari" : (endless ? "enough." : "time.");
-  document.getElementById("final").innerHTML = handsText(h) + "<span>hh</span>";
+  document.getElementById("final").innerHTML = handsText(h) + "<span> hands</span>";
   document.getElementById("tally").textContent =
-    collected + " things stuck to Max · " + metricText(radius) + " across";
-  document.getElementById("exprval").textContent = handsText(h) + "hh, " + Math.round(hp) + " hp";
+    collected + " things stuck to Max";
+  document.getElementById("exprval").textContent = handsText(h) + " hands";
   document.getElementById("endnote").textContent = won
     ? (endless
-      ? "Sampson managed 21.2hh in 1850 and nothing has beaten him since."
-      : "Sampson managed 21.2hh in 1850 and nothing has beaten him since. Max did it in three minutes.")
+      ? "Sampson managed 21.2 hands in 1850 and nothing has beaten him since."
+      : "Sampson managed 21.2 hands in 1850 and nothing has beaten him since. Max did it in three minutes.")
     : (endless
       ? "No bell. The field was always going to wait."
       : "Start on the crumbs. Every pickup unlocks the next size up.");
@@ -2567,9 +2624,12 @@ function finish(won){
 
 function kingLine(k){
   if (!k || !k.hh) return "no umatamari yet. there can be only one.";
-  return "the umatamari is <b>" + handsText(k.hh) + "hh</b>";
+  return "the umatamari is <b>" + handsText(k.hh) + " hands</b>";
 }
-function showKing(k){
+function showKing(k, status){
+  progressRecord = k && Number.isFinite(k.radius) && k.radius >= START_R ? k.radius : 0;
+  progressRecordState = progressRecord ? "ready" : (status || "empty");
+  syncProgress();
   var start = document.getElementById("kingline");
   var end = document.getElementById("kingend");
   var html = kingLine(k);
@@ -2592,9 +2652,9 @@ function showKing(k){
 }
 function loadKing(){
   return fetch("/api/max").then(function(r){
-    if (!r.ok) return { king: null };
+    if (!r.ok) throw new Error("high score unavailable");
     return r.json();
-  }).then(function(d){ showKing(d && d.king); }).catch(function(){ showKing(null); });
+  }).then(function(d){ showKing(d && d.king,"empty"); }).catch(function(){ showKing(null,"unavailable"); });
 }
 function submitKing(won){
   if (dirty || DEV) return;
@@ -2648,7 +2708,7 @@ addEventListener("resize", function(){
 var GLOSS = [
   "<b>uma</b> <i>noun</i><br>a horse.",
   "<b>tamari</b> <i>noun</i><br>a lump. everything that stuck.",
-  "<b>umatamari</b> <i>property</i><br>the number that comes back. it only goes up."
+  "<b>umatamari</b> <i>noun</i><br>a pool of deliciousness."
 ];
 var glossEl = document.getElementById("gloss"), gi = 1;
 glossEl.innerHTML = GLOSS[0];

@@ -4,7 +4,7 @@ This is the working map of the repo. Read it before changing code. Do not play t
 
 ## What it is
 
-Umatamari is a browser Katamari. Max is a horse. Things smaller than him stick. Things bigger say nay. Timed runs last three minutes and aim for 78.2hh. Endless has no bell. The daily field is seeded from the UTC date so everyone rolls the same world. Live site: https://max.horse
+Umatamari is a browser Katamari. Max is a horse. Things smaller than him stick. Things bigger say nay. Timed runs last three minutes and aim for 78.2 hands. Endless has no bell. The daily field is seeded from the UTC date so everyone rolls the same world. Live site: https://max.horse
 
 The game is a Vite + three.js r128 app on Cloudflare Pages. The Pages project is still named `maximum-horsage`. Default git branch is `master`.
 
@@ -49,7 +49,7 @@ World props are built, then `bakeProp` merges their meshes into one vertex-color
 ## Units
 
 - A hand is 4 inches. `CM_PER_HAND = 10.16`.
-- `hh = radius * 200 / CM_PER_HAND`. Display uses hands-and-inches (5.3hh means five hands three inches, not 5.3 decimal). Start radius `0.30` shows as 5.3hh. Goal radius `GOAL_R = 4.0` shows as 78.2hh.
+- `hh = radius * 200 / CM_PER_HAND` (internal). Display says "hands" (5.3 hands means five hands three inches, not 5.3 decimal). Start radius `0.30` shows as 5.3 hands. Goal radius `GOAL_R = 4.0` shows as 78.2 hands.
 - Volume fill: pickup adds `size³ * FILL` (`FILL = 0.32`). Radius is the sphere of that volume.
 - Pickup: an object sticks if `size <= radius * PICKUP` (`PICKUP = 1.55`).
 - **A horse is exactly 1 hp.** Recipes that are horses (`dark horse`, `police horse`, `high horse`, `trojan horse`, and any new one) must set `hp: 1`. Horsepower on Max is a running total of eaten hp. `powerMul()` uses log10(hp). It does not change FOV.
@@ -102,7 +102,7 @@ Star 2 is "they come after you". Do not put chase back in the 3-minute game. Do 
 
 Framing does not ease with radius. `camTier` tracks peak `TIERS` row. `dist` / `high` / `fov` snap to the *next* tier's radius (`framedRadius`) and kick 20% on level-up, then settle. Shedding does not zoom back in. Do not add a second follow mode. Do not scale FOV from hp.
 
-`TIERS` drive HUD names and banners. `ownerCall` (speechSynthesis "max" → "MAAAAAX") fires on every displayed hh tick, not only named tiers, and the title card yells in the background. Chrome needs a tick after `cancel()` before `speak()`.
+`TIERS` drive HUD names and banners. `ownerCall` (speechSynthesis "max" → "MAAAAAX") fires on every displayed hands tick, not only named tiers, and the title card yells in the background. Chrome needs a tick after `cancel()` before `speak()`.
 
 ## King
 
