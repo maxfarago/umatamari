@@ -4,7 +4,7 @@
 
 play it at [max.horse](https://max.horse).
 
-the field is the same for everyone each utc day. grow to 78.2hh. you have three minutes, or you can play endless and stop when you like. the umatamari is the largest timed roll. there can be only one.
+the field is the same for everyone each utc day. grow to 78.2 hands. you have three minutes, or you can play endless and stop when you like. the umatamari is the largest timed roll. there can be only one.
 
 ```
 npm i && npm run dev

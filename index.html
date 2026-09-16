@@ -2,23 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ece4cd">
 <title>umatamari</title>
 </head>
 <body>
 
 <div id="hud">
   <div id="size" class="plate">
-    <div class="cap">Max is</div>
-    <div id="sizeval">5.3<span>hh</span></div>
-    <div id="metric">60cm</div>
-    <div id="bar"><div id="barfill"></div></div>
-    <div id="foot"><span id="tier">foal</span><span id="hp">1 hp</span></div>
+    <div class="cap" id="metric">5.3 hands</div>
+    <div id="sizeval">foal</div>
   </div>
 
   <div id="clock" class="plate">
     <div class="cap">Time left</div>
     <div id="time">3:00</div>
+  </div>
+
+  <div id="progress" class="plate" role="group" aria-label="Max’s growth">
+    <div class="progress-heading">
+      <div class="progress-next">
+        <span class="progress-cap next-caption"><i class="next-key" aria-hidden="true"></i><span id="next-name">Next: miniature</span></span>
+        <div class="next-detail">
+          <div id="next-meter" role="progressbar" aria-label="Progress to the next size milestone"><div id="next-fill"></div></div>
+          <strong id="next-size">2.2 hands</strong>
+        </div>
+      </div>
+      <div class="progress-record"><span class="progress-cap"><svg class="crown" viewBox="0 0 20 16" aria-hidden="true"><path d="M2 3l4 4 4-5 4 5 4-4-2 10H4z"/></svg><span id="record-label">High score</span></span><strong id="record-size">Loading…</strong></div>
+    </div>
+    <div id="bar" role="progressbar" aria-label="Size compared with the high score">
+      <div class="bar-track"><div id="barfill"></div><div id="bar-ticks" aria-hidden="true"></div></div>
+      <i id="bar-record" class="hidden" aria-hidden="true"></i>
+      <i id="bar-next" aria-hidden="true"></i>
+      <i id="bar-current" aria-hidden="true"></i>
+    </div>
+
   </div>
 
   <div id="wanted" aria-label="Wanted level">
@@ -45,7 +63,7 @@
       <span class="jp" lang="ja" aria-hidden="true"><i>ウ</i><i>マ</i><i>た</i><i>ま</i><i>り</i></span>
     </h1>
     <div id="gloss"></div>
-    <p>Max rolls in the grass, the way horses do.<br>Everything smaller sticks. Everything bigger says NAY.</p>
+    <p>Max rolls in the grass, the way horses do.<br>Everything smaller sticks.<br>Everything bigger says NAY.</p>
     <div class="keys">
       <b>W A S D</b><b>arrow keys</b><b>drag to turn the camera</b>
     </div>
@@ -61,7 +79,7 @@
 <div class="veil hidden" id="endveil">
   <div class="card">
     <h1 id="endtitle">time.</h1>
-    <div id="final">0hh</div>
+    <div id="final">0<span> hands</span></div>
     <div id="tally"></div>
     <div id="expr"><em>&gt;</em> umatamari <em>→</em> <b id="exprval">0</b></div>
     <p id="endnote"></p>
