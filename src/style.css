@@ -15,7 +15,7 @@
   }
   html::before{top:0;height:env(safe-area-inset-top,0px)}
   html::after{bottom:0;height:env(safe-area-inset-bottom,0px)}
-  canvas{display:block}
+  canvas{display:block;position:relative;z-index:0}
   #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
 
   .plate{
@@ -175,7 +175,7 @@
   .hidden{display:none!important}
 
   #stick{position:fixed;left:50%;bottom:0;width:168px;height:168px;margin-left:-84px;z-index:4;touch-action:none}
-  #look{position:fixed;right:0;top:0;bottom:150px;width:50vw;z-index:4;touch-action:none}
+  #look{position:absolute;left:0;right:0;top:0;bottom:50%;pointer-events:auto;touch-action:none}
   #knob{position:fixed;left:50%;width:110px;height:110px;margin-left:-55px;
     bottom:max(16px, env(safe-area-inset-bottom));
     border-radius:50%;border:3px solid rgba(43,33,64,.5);
@@ -194,7 +194,6 @@
     #knob{width:84px;height:84px;margin-left:-42px}
     #knob i{width:36px;height:36px;margin:-18px 0 0 -18px}
     #stick{width:140px;height:140px;margin-left:-70px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
-    #look{bottom:calc(150px + 8px + env(safe-area-inset-bottom,0px))}
     #devbadge{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;right:12px}
     #hint{top:calc(18px + env(safe-area-inset-top,0px))}
     .card h1{font-size:42px}.card h1.brand{font-size:34px}
@@ -205,7 +204,6 @@
     #progress{width:min(520px, calc(100vw - 24px));bottom:calc(12px + env(safe-area-inset-bottom,0px))}
     #size,#clock,#knob{bottom:calc(var(--hud-panel-height) + 24px + env(safe-area-inset-bottom,0px))}
     #stick{bottom:calc(var(--hud-panel-height) + 10px + env(safe-area-inset-bottom,0px))}
-    #look{bottom:calc(var(--hud-panel-height) + 158px + env(safe-area-inset-bottom,0px))}
     #wanted,#picked{bottom:calc(var(--hud-panel-height) + 148px + env(safe-area-inset-bottom,0px))}
     #devbadge{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto}
   }
