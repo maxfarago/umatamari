@@ -1890,6 +1890,7 @@ function camTargets(t){
     fov: 58 + Math.min(8, Math.max(0, t + 1) * 0.55)
   };
 }
+var CAM_LOOK_UP = 5 * Math.PI / 180;
 function applyFov(){
   camera.fov = camTargets(camTier).fov;
   camera.updateProjectionMatrix();
@@ -2314,19 +2315,46 @@ stickEl.addEventListener("touchcancel",stickEnd);
 
 var lookId = null, lookX = 0;
 var lookEl = document.getElementById("look");
+function horseScreenY(){
+  camera.updateMatrixWorld();
+  tmpV.set(katamari.position.x, katamari.position.y + radius, katamari.position.z);
+  tmpV.project(camera);
+  var rect = renderer.domElement.getBoundingClientRect();
+  return rect.top + (1 - tmpV.y) * 0.5 * rect.height;
+}
+function syncLookPad(){
+  var y = horseScreenY();
+  if (!Number.isFinite(y)) return;
+  var cap = stickEl.getBoundingClientRect().top;
+  if (cap > 0) y = Math.min(y, cap);
+  y = Math.max(64, Math.min(y, innerHeight - 64));
+  lookEl.style.top = "0";
+  lookEl.style.height = "auto";
+  lookEl.style.bottom = (innerHeight - y) + "px";
+}
 lookEl.addEventListener("touchstart", function(e){
-  var t = e.changedTouches[0]; lookId = t.identifier; lookX = t.clientX; e.preventDefault();
+  var t = e.changedTouches[0];
+  if (t.clientY > horseScreenY()) return;
+  lookId = t.identifier;
+  lookX = t.clientX;
+  e.preventDefault();
 }, {passive:false});
 lookEl.addEventListener("touchmove", function(e){
   for (var i=0;i<e.changedTouches.length;i++){
     var t = e.changedTouches[i];
     if (t.identifier !== lookId) continue;
-    camYaw -= (t.clientX - lookX) * 0.006;
+    if (t.clientY <= horseScreenY()) camYaw -= (t.clientX - lookX) * 0.006;
     lookX = t.clientX;
   }
   e.preventDefault();
 }, {passive:false});
-lookEl.addEventListener("touchend", function(){ lookId = null; });
+function lookEnd(e){
+  for (var i=0;i<e.changedTouches.length;i++){
+    if (e.changedTouches[i].identifier === lookId) lookId = null;
+  }
+}
+lookEl.addEventListener("touchend", lookEnd);
+lookEl.addEventListener("touchcancel", lookEnd);
 
 // ---------------------------------------------------------------- camera
 var prevPos = new THREE.Vector3();
@@ -2384,6 +2412,7 @@ function placeCamera(dt, snap){
   if (snap) camera.position.copy(camPos);
   else camera.position.lerp(camPos, 1 - Math.pow(1 - 0.09, dt*60));
   camera.lookAt(camAim);
+  camera.rotateX(CAM_LOOK_UP);
   if (shake > 0){
     camera.position.x += (Math.random()-0.5)*shake;
     camera.position.y += (Math.random()-0.5)*shake;
@@ -2538,6 +2567,7 @@ function frame(){
   followSun();
   updateRig(dt);
   placeCamera(dt, false);
+  syncLookPad();
   placeSky();
   updateContacts();
   renderer.render(scene, camera);
