@@ -676,25 +676,38 @@ function updateRig(dt){
 // ---------------------------------------------------------------- a horse, generally
 // Eight of the recipes below are horses of one kind or another, so they share a
 // builder. legK stretches the legs, which is the whole of the high-horse joke.
+// shared, low-resolution shapes keep baked herds light
+var geoHorseRound = new THREE.SphereGeometry(0.5,8,6);
+var geoHorseLeg = new THREE.CylinderGeometry(0.50,0.38,1,8);
+var geoHorseTail = tailLock(0,1,MANE).geometry;
 function quadruped(s, hide, mane, legK){
   var g = new THREE.Group();
   var leg = s*0.34*(legK || 1);
-  var y   = leg + s*0.16;
-  g.add(box(hide, s*0.60, s*0.30, s*0.26,  0,        y,         0));       // barrel
-  g.add(box(hide, s*0.22, s*0.31, s*0.27, -s*0.26,   y+s*0.03,  0));       // rump
-  turn(g, box(hide, s*0.13, s*0.36, s*0.20, s*0.29,  y+s*0.17,  0), 0,0,-0.42); // neck
-  g.add(toyBox(hide, s*0.21, s*0.13, s*0.14,  s*0.43,   y+s*0.31,  0));       // head
-  g.add(toyBox(hide, s*0.10, s*0.10, s*0.11,  s*0.51,   y+s*0.27,  0));       // muzzle
-  g.add(sph(DARK, s*0.018, s*0.50, y+s*0.34, -s*0.055));
-  g.add(sph(DARK, s*0.018, s*0.50, y+s*0.34,  s*0.055));
-  g.add(con(hide, s*0.026, s*0.08, s*0.36, y+s*0.41, -s*0.04));
-  g.add(con(hide, s*0.026, s*0.08, s*0.36, y+s*0.41,  s*0.04));            // ears
-  g.add(box(mane, s*0.05, s*0.28, s*0.14,  s*0.32,   y+s*0.26, 0));        // mane
-  turn(g, con(mane, s*0.05, s*0.28, -s*0.38, y-s*0.01, 0), 0,0,-2.5);      // tail
-  var lp = [[s*0.20, s*0.09],[s*0.20,-s*0.09],[-s*0.20, s*0.09],[-s*0.20,-s*0.09]];
+  var y = leg + s*0.16;
+  function round(c,w,h,d,x,dy,z){
+    return part(geoHorseRound,c,s*w,s*h,s*d,s*x,y+s*dy,s*z);
+  }
+  // overlapping volumes keep the back level for saddles and riders
+  g.add(round(hide,0.65,0.31,0.27,-0.025,0,0));
+  g.add(round(hide,0.30,0.33,0.29,-0.22,0.005,0));
+  g.add(round(hide,0.27,0.33,0.28,0.20,0.005,0));
+  turn(g,round(hide,0.20,0.43,0.22,0.285,0.16,0),0,0,-0.38);
+  turn(g,round(hide,0.25,0.19,0.17,0.415,0.315,0),0,0,-0.22);
+  g.add(round(hide,0.17,0.125,0.15,0.515,0.27,0));
+  for (var side=-1;side<=1;side+=2){
+    g.add(round(DARK,0.034,0.039,0.022,0.443,0.344,side*0.075));
+    g.add(round(DARK,0.014,0.018,0.012,0.566,0.281,side*0.045));
+    turn(g,round(hide,0.055,0.12,0.055,0.36,0.424,side*0.055),side*0.18,0,-0.12);
+  }
+  // a scalloped crest and forelock read as sculpted hair at a distance
+  turn(g,round(mane,0.095,0.30,0.155,0.235,0.20,0),0,0,-0.38);
+  turn(g,round(mane,0.095,0.22,0.15,0.29,0.30,0),0,0,-0.38);
+  turn(g,round(mane,0.12,0.085,0.14,0.395,0.394,0),0,0,-0.35);
+  turn(g,part(geoHorseTail,mane,s*0.48,s*0.65,s*0.42,-s*0.34,y+s*0.045,0),0,Math.PI/2,0);
+  var lp = [[0.20,0.095],[0.20,-0.095],[-0.22,0.095],[-0.22,-0.095]];
   for (var i=0;i<4;i++){
-    g.add(box(hide, s*0.06, leg, s*0.06, lp[i][0], leg*0.5, lp[i][1]));
-    g.add(box(DARK, s*0.07, s*0.035, s*0.075, lp[i][0], s*0.018, lp[i][1]));
+    g.add(part(geoHorseLeg,hide,s*0.085,leg+s*0.06,s*0.085,s*lp[i][0],(leg+s*0.06)*0.5,s*lp[i][1]));
+    g.add(toyBox(DARK,s*0.10,s*0.055,s*0.09,s*(lp[i][0]+0.009),s*0.0275,s*lp[i][1]));
   }
   return g;
 }
@@ -703,6 +716,41 @@ function rider(g, s, y, coat, hat){
   g.add(sph(0xe8b98d, s*0.07, s*0.05, y+s*0.28, 0));
   g.add(cyl(hat, s*0.10, s*0.09, s*0.05, y+s*0.36, 0));
 }
+
+// reusable toy details, baked with the rest of each pickup
+var geoToyLeaf = new THREE.SphereGeometry(0.5,8,4);
+var geoMugBody = new THREE.LatheGeometry([
+  new THREE.Vector2(0,0),new THREE.Vector2(0.30,0),
+  new THREE.Vector2(0.355,0.025),new THREE.Vector2(0.37,0.075),
+  new THREE.Vector2(0.37,0.62),new THREE.Vector2(0.355,0.66),
+  new THREE.Vector2(0.31,0.66),new THREE.Vector2(0.31,0.60),
+  new THREE.Vector2(0,0.60)
+],14);
+var geoMugHandle = new THREE.TorusGeometry(0.22,0.055,6,12);
+var shoeShape = new THREE.Shape();
+shoeShape.absarc(0,0,0.46,-0.6,Math.PI+0.6,false);
+shoeShape.lineTo(Math.cos(Math.PI+0.6)*0.28,Math.sin(Math.PI+0.6)*0.28);
+shoeShape.absarc(0,0,0.28,Math.PI+0.6,-0.6,true);
+shoeShape.closePath();
+var geoHorseshoe = new THREE.ExtrudeGeometry(shoeShape,{depth:0.065,bevelEnabled:true,
+  bevelThickness:0.018,bevelSize:0.018,bevelSegments:1,steps:1,curveSegments:12});
+geoHorseshoe.rotateX(-Math.PI/2);
+geoHorseshoe = BufferGeometryUtils.mergeVertices(geoHorseshoe);
+var geoApple = new THREE.SphereGeometry(0.5,12,9);
+var applePos = geoApple.attributes.position;
+for (var appleI=0;appleI<applePos.count;appleI++){
+  var ax=applePos.getX(appleI), ay=applePos.getY(appleI), az=applePos.getZ(appleI);
+  var waist=1+ay*0.20;
+  var lobes=1+0.035*Math.cos(Math.atan2(az,ax)*5);
+  applePos.setXYZ(appleI,ax*waist*lobes,ay-0.07*Math.exp(-(ax*ax+az*az)*70),az*waist*lobes);
+}
+geoApple.computeVertexNormals();
+var geoCarrot = new THREE.LatheGeometry([
+  new THREE.Vector2(0,-0.45),new THREE.Vector2(0.035,-0.36),
+  new THREE.Vector2(0.09,-0.12),new THREE.Vector2(0.145,0.20),
+  new THREE.Vector2(0.13,0.36),new THREE.Vector2(0.07,0.42),
+  new THREE.Vector2(0,0.42)
+],10);
 
 // ---------------------------------------------------------------- recipes
 // hp is added to Max's horsepower on pickup. A horse is one horsepower. That is
@@ -749,10 +797,12 @@ var KIT = [
     return g;}},
   {name:"candy", size:[0.2,0.3], w:6, zone:[0,26], make:function(s,c){
     var g=new THREE.Group();
-    g.add(box(c, s*0.55, s*0.5, s*0.5, 0, s*0.25, 0));
-    g.add(box(0xf7f2e4, s*0.58, s*0.14, s*0.52, 0, s*0.25, 0));
-    g.add(con(0xf7f2e4, s*0.2, s*0.32, s*0.44, s*0.25, 0));
-    turn(g, con(0xf7f2e4, s*0.2, s*0.32, -s*0.44, s*0.25, 0), 0, 0, Math.PI);
+    g.add(toyBox(c,s*0.55,s*0.44,s*0.44,0,s*0.24,0));
+    g.add(toyBox(0xf7f2e4,s*0.15,s*0.45,s*0.45,0,s*0.24,0));
+    for (var side=-1;side<=1;side+=2){
+      g.add(part(geoToyLeaf,c,s*0.13,s*0.18,s*0.18,side*s*0.30,s*0.24,0));
+      turn(g,con(0xf7f2e4,s*0.17,s*0.23,side*s*0.43,s*0.24,0),0,0,side*Math.PI/2);
+    }
     return g;}},
   {name:"die", size:[0.24,0.32], w:5, zone:[0,28], make:function(s){
     var g=new THREE.Group();
@@ -767,10 +817,10 @@ var KIT = [
     return g;}},
   {name:"horseshoe", size:[0.26,0.36], w:9, zone:[0,30], make:function(s){
     var g=new THREE.Group();
-    for (var i=0;i<7;i++){
-      var a = -0.5 + (i/6)*4.1;
-      g.add(box(STEEL, s*0.16, s*0.1, s*0.16, Math.cos(a)*s*0.38, s*0.05, Math.sin(a)*s*0.38));
-      if (i%2===0) g.add(box(DARK, s*0.05, s*0.04, s*0.05, Math.cos(a)*s*0.38, s*0.11, Math.sin(a)*s*0.38));
+    g.add(part(geoHorseshoe,STEEL,s,s,s,0,s*0.018,0));
+    for (var i=0;i<6;i++){
+      var a=-0.35+i*(Math.PI+0.70)/5;
+      g.add(cyl(DARK,s*0.025,s*0.006,Math.cos(a)*s*0.37,s*0.102,-Math.sin(a)*s*0.37));
     }
     return g;}},
   {name:"eraser", size:[0.28,0.4], w:5, zone:[0,28], make:function(s,c){
@@ -829,24 +879,27 @@ var KIT = [
   // ---- yard
   {name:"carrot", size:[0.3,0.45], w:9, zone:[0,44], make:function(s){
     var g=new THREE.Group();
-    turn(g, con(0xf08a3c, s*0.15, s*0.9, 0, s*0.16, 0), 0, 0, -2.0);
-    for (var i=0;i<3;i++)
-      g.add(box(0x4fa34a, s*0.06, s*0.26, s*0.06, s*0.34+i*s*0.06, s*0.34, (i-1)*s*0.07));
+    var root=new THREE.Group();
+    root.position.set(0,s*0.16,0);root.rotation.z=-1.85;
+    root.add(part(geoCarrot,0xf08a3c,s,s,s,0,0,0));
+    for (var i=-1;i<=1;i++)
+      turn(root,part(geoToyLeaf,i===0?0x4fa34a:0x6aaf50,s*0.10,s*0.32,s*0.06,i*s*0.07,s*0.53,i*s*0.045),0,0,-i*0.40);
+    g.add(root);
     return g;}},
   {name:"apple", size:[0.35,0.5], w:8, zone:[0,46], make:function(s){
     var g=new THREE.Group();
-    g.add(sph(0xe9573f, s*0.45, 0, s*0.45, 0));
-    g.add(sph(0xf27a5c, s*0.16, s*0.18, s*0.58, s*0.18));
-    g.add(cyl(0x6b4a2f, s*0.035, s*0.20, 0, s*0.90, 0));
-    turn(g, box(0x4fa34a, s*0.22, s*0.04, s*0.12, s*0.12, s*0.94, 0), 0, 0, 0.45);
+    g.add(part(geoApple,0xe9573f,s*0.90,s*0.86,s*0.90,0,s*0.48,0));
+    turn(g,cyl(0x6b4a2f,s*0.027,s*0.17,0,s*0.88,0),0,0,-0.20);
+    turn(g,part(geoToyLeaf,0x4fa34a,s*0.27,s*0.045,s*0.13,s*0.115,s*0.92,0),0,0,0.28);
     return g;}},
   {name:"mug", size:[0.4,0.55], w:5, zone:[0,46], make:function(s,c){
     var g=new THREE.Group();
-    g.add(cyl(c, s*0.4, s*0.70, 0, s*0.35, 0));
-    g.add(cyl(0x3a2418, s*0.32, s*0.08, 0, s*0.68, 0));
-    g.add(box(c, s*0.08, s*0.08, s*0.10, s*0.44, s*0.58, 0));
-    g.add(box(c, s*0.08, s*0.08, s*0.10, s*0.44, s*0.22, 0));
-    g.add(box(c, s*0.08, s*0.44, s*0.10, s*0.52, s*0.40, 0));
+    g.add(part(geoMugBody,c,s,s,s,0,0,0));
+    g.add(cyl(0x3a2418,s*0.31,s*0.035,0,s*0.645,0));
+    // a pale lip frames the recessed drink
+    var rim=part(geoMugHandle,0xf7f2e4,s*1.48,s*1.48,s*0.72,0,s*0.675,0);
+    rim.rotation.x=Math.PI/2;g.add(rim);
+    g.add(part(geoMugHandle,c,s*0.90,s*1.04,s*1.15,s*0.39,s*0.36,0));
     return g;}},
   {name:"soda can", size:[0.4,0.55], w:5, zone:[0,48], make:function(s,c){
     var g=new THREE.Group();
