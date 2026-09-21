@@ -1089,6 +1089,21 @@ var KIT = [
     g.add(box(0x5f6b7a, s*0.08, s*0.08, s*0.32, -s*0.42, s*0.28, 0));
     g.add(box(0x5f6b7a, s*0.08, s*0.08, s*0.32,  s*0.42, s*0.28, 0));
     return g;}},
+  {name:"pool horse", size:[2.2,3.2], w:5, hp:1, zone:[10,90], make:function(s,c){
+    var g=new THREE.Group();
+    var q = quadruped(s*0.82, HIDE, MANE, 0.48);
+    q.position.y = s*0.14;
+    g.add(q);
+    var t=s*0.12, y=t, hx=s*0.36, hz=s*0.22;
+    turn(g, cyl(c, t, hx*2, 0, y,  hz), 0,0,Math.PI/2);
+    turn(g, cyl(c, t, hx*2, 0, y, -hz), 0,0,Math.PI/2);
+    turn(g, cyl(c, t, hz*2,  hx, y, 0), Math.PI/2,0,0);
+    turn(g, cyl(c, t, hz*2, -hx, y, 0), Math.PI/2,0,0);
+    g.add(sph(c, t,  hx, y,  hz));
+    g.add(sph(c, t,  hx, y, -hz));
+    g.add(sph(c, t, -hx, y,  hz));
+    g.add(sph(c, t, -hx, y, -hz));
+    return g;}},
   {name:"carousel horse", size:[2.2,3.0], w:5, zone:[10,90], make:function(s){
     var g=new THREE.Group();
     var q = quadruped(s*0.9, 0xf7f2e4, 0xff8fc0, 1.0);
