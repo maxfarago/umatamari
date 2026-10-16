@@ -1944,6 +1944,7 @@ function camTargets(t){
   };
 }
 var CAM_LOOK_UP = 5 * Math.PI / 180;
+var camTurn = 0, camPitch = 0, camPitchVel = 0;
 function applyFov(){
   camera.fov = camTargets(camTier).fov;
   camera.updateProjectionMatrix();
@@ -1981,6 +1982,9 @@ function reset(){
   lastSizeText = handsText(lastHands);
   vel      = new THREE.Vector3();
   camYaw   = 0;
+  camTurn = 0;
+  camPitch = 0;
+  camPitchVel = 0;
   shake    = 0;
   rigYaw   = 0;
   bobT     = 0;
@@ -2290,6 +2294,10 @@ function syncClock(){
 // ---------------------------------------------------------------- input
 var keys = {};
 addEventListener("keydown", function(e){
+  if (running && !e.repeat && !keys[e.code]){
+    if (e.code === "KeyA") camTurn += Math.PI / 2;
+    if (e.code === "KeyD") camTurn -= Math.PI / 2;
+  }
   keys[e.code] = true;
   if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code) >= 0) e.preventDefault();
   if (e.code === "Escape" && running && gameMode === "endless"){
@@ -2465,7 +2473,19 @@ function placeCamera(dt, snap){
   if (snap) camera.position.copy(camPos);
   else camera.position.lerp(camPos, 1 - Math.pow(1 - 0.09, dt*60));
   camera.lookAt(camAim);
-  camera.rotateX(CAM_LOOK_UP);
+  var pitchTarget = running ? ((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0)) * Math.PI / 8 : 0;
+  if (snap){
+    camPitch = 0;
+    camPitchVel = 0;
+  } else {
+    var pitchRate = 14;
+    var offset = camPitch - pitchTarget;
+    var spring = camPitchVel + pitchRate * offset;
+    var decay = Math.exp(-pitchRate * dt);
+    camPitch = pitchTarget + (offset + spring * dt) * decay;
+    camPitchVel = (camPitchVel - pitchRate * spring * dt) * decay;
+  }
+  camera.rotateX(CAM_LOOK_UP + camPitch);
   if (shake > 0){
     camera.position.x += (Math.random()-0.5)*shake;
     camera.position.y += (Math.random()-0.5)*shake;
@@ -2487,13 +2507,15 @@ function step(dt){
   }
   stashPrev();
   var fx = 0, fz = 0;
-  if (keys.KeyW || keys.ArrowUp)    fz += 1;
-  if (keys.KeyS || keys.ArrowDown)  fz -= 1;
-  if (keys.KeyD || keys.ArrowRight) fx += 1;
-  if (keys.KeyA || keys.ArrowLeft)  fx -= 1;
+  if (keys.ArrowUp)    fz += 1;
+  if (keys.ArrowDown)  fz -= 1;
+  if (keys.ArrowRight) fx += 1;
+  if (keys.ArrowLeft)  fx -= 1;
   if (touchDir.lengthSq() > 0.01){ fx += touchDir.x; fz -= touchDir.y; }
-  if (keys.KeyQ) camYaw += dt*1.8;
-  if (keys.KeyE) camYaw -= dt*1.8;
+  var turn = camTurn * (1 - Math.exp(-18 * dt));
+  if (Math.abs(camTurn) < 0.001) turn = camTurn;
+  camYaw += turn;
+  camTurn -= turn;
 
   fwd.set(-Math.sin(camYaw), 0, -Math.cos(camYaw));
   right.set(-fwd.z, 0, fwd.x);
@@ -2788,22 +2810,6 @@ addEventListener("resize", function(){
 });
 
 // ---------------------------------------------------------------- title card
-var GLOSS = [
-  "<b>uma</b> <i>noun</i><br>a horse.",
-  "<b>tamari</b> <i>noun</i><br>a lump. everything that stuck.",
-  "<b>umatamari</b> <i>noun</i><br>a pool of deliciousness."
-];
-var glossEl = document.getElementById("gloss"), gi = 1;
-glossEl.innerHTML = GLOSS[0];
-setInterval(function(){
-  if (startveil.classList.contains("hidden")) return;
-  glossEl.style.opacity = 0;
-  setTimeout(function(){
-    glossEl.innerHTML = GLOSS[gi % GLOSS.length]; gi++;
-    glossEl.style.opacity = 1;
-  }, 340);
-}, 3200);
-
 var voiceUnlocked = false;
 function titleCall(){
   if (!voiceUnlocked) return;

@@ -126,6 +126,7 @@
     pointer-events:auto;z-index:5}
   .card{max-width:460px;width:100%;text-align:center;background:var(--cream);
     border:4px solid var(--ink);border-radius:26px;padding:30px 28px 24px}
+  #startveil .card{max-width:660px}
   .card h1{font-size:56px;font-weight:700;line-height:.92;letter-spacing:-.03em}
   .card h1.brand{
     display:inline-flex;flex-direction:column;align-items:stretch;
@@ -142,15 +143,19 @@
   }
   .card p{font-size:15px;font-weight:400;line-height:1.55;margin-top:14px;opacity:.85}
 
-  #gloss{min-height:52px;margin-top:16px;font-size:15px;font-weight:400;line-height:1.45;
-    opacity:1;transition:opacity .34s}
+  #gloss{margin-top:16px;font-size:15px;font-weight:400;line-height:1.45}
   #gloss b{font-weight:600}
   #gloss i{font-style:italic;opacity:.55}
+  .card p.intro{margin-top:0;line-height:1.45;white-space:nowrap;font-size:clamp(10px,2.6vw,15px)}
+  .instructions{width:max-content;max-width:100%;margin:26px auto 0}
 
-  .keys{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
-  .keys b{background:var(--ink);color:var(--cream);font-weight:600;font-size:13px;
-    padding:6px 11px;border-radius:9px}
+  .instructions-title{font-size:30px;letter-spacing:0;line-height:1.15;margin:0}
+  .keys{display:grid;gap:8px;width:100%;list-style:none;padding:0;margin:16px auto 0}
+  .keys li{display:flex;align-items:center;justify-content:center;text-align:center;
+    background:var(--ink);color:var(--cream);font-weight:600;font-size:16px;
+    padding:7px 12px;border-radius:14px}
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  .instructions .btns{width:280px;max-width:calc(100vw - 96px);position:relative;left:50%;transform:translateX(-50%)}
   .btns button{margin-top:0;width:100%;min-width:0;padding-left:12px;padding-right:12px}
   button{font-family:inherit;font-size:19px;font-weight:600;color:var(--ink);
     background:var(--sun);border:3px solid var(--ink);border-radius:16px;
@@ -196,6 +201,8 @@
     #stick{width:140px;height:140px;margin-left:-70px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
     #devbadge{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;right:12px}
     #hint{top:calc(18px + env(safe-area-inset-top,0px))}
+    .instructions-title{font-size:30px}
+    .keys li{font-size:clamp(13px,3.5vw,16px)}
     .card h1{font-size:42px}.card h1.brand{font-size:34px}
     #hint{display:none}
     #nay{font-size:42px}#banner{font-size:16px}
