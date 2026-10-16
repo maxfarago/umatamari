@@ -19,17 +19,16 @@
     <div id="time">3:00</div>
   </div>
 
+  <div id="next-panel" class="plate">
+    <span id="next-name">Next: miniature</span>
+    <strong id="next-size">2.2 hands to go</strong>
+  </div>
+  <div id="record-panel" class="plate">
+    <span id="record-label">High score</span>
+    <strong id="record-size">Loading…</strong>
+  </div>
+
   <div id="progress" class="plate" role="group" aria-label="Max’s growth">
-    <div class="progress-heading">
-      <div class="progress-next">
-        <span class="progress-cap next-caption"><i class="next-key" aria-hidden="true"></i><span id="next-name">Next: miniature</span></span>
-        <div class="next-detail">
-          <div id="next-meter" role="progressbar" aria-label="Progress to the next size milestone"><div id="next-fill"></div></div>
-          <strong id="next-size">2.2 hands</strong>
-        </div>
-      </div>
-      <div class="progress-record"><span class="progress-cap"><svg class="crown" viewBox="0 0 20 16" aria-hidden="true"><path d="M2 3l4 4 4-5 4 5 4-4-2 10H4z"/></svg><span id="record-label">High score</span></span><strong id="record-size">Loading…</strong></div>
-    </div>
     <div id="bar" role="progressbar" aria-label="Size compared with the high score">
       <div class="bar-track"><div id="barfill"></div><div id="bar-ticks" aria-hidden="true"></div></div>
       <i id="bar-record" class="hidden" aria-hidden="true"></i>
@@ -65,12 +64,23 @@
     <div id="gloss"><b>umatamari</b> <i>noun</i><br>a pool of deliciousness.</div>
     <p class="intro">smaller things stick. bigger things say nay.</p>
     <div class="instructions">
-      <h2 class="instructions-title">INSTRUCTIONS</h2>
-      <ol class="keys">
-        <li>Arrow keys to roll</li>
-        <li>A / D to turn 90°</li>
-        <li>W / S to look up / down</li>
-      </ol>
+      <div class="instructions-panel">
+        <h2 class="instructions-title">INSTRUCTIONS</h2>
+        <ol class="keys">
+          <li class="camera-instruction">
+            <span class="camera-keys" aria-label="Arrow keys: up, left, down, right">
+              <kbd class="key-w">↑</kbd><kbd class="key-a">←</kbd><kbd class="key-s">↓</kbd><kbd class="key-d">→</kbd>
+            </span>
+            <span>to roll</span>
+          </li>
+          <li class="camera-instruction">
+            <span class="camera-keys" aria-label="W up, S down, A left, D right">
+              <kbd class="key-w">W</kbd><kbd class="key-a">A</kbd><kbd class="key-d">D</kbd><kbd class="key-s">S</kbd>
+            </span>
+            <span>to pan camera</span>
+          </li>
+        </ol>
+      </div>
       <div class="btns">
         <button id="start-timed">3 minutes</button>
         <button id="start-endless" class="secondary">Endless</button>
